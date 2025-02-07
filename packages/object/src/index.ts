@@ -254,7 +254,8 @@ export class DRPObject implements ObjectPb.DRPObjectBase {
 			}
 
 			try {
-				if (!this._checkWriterPermission(vertex.peerId)) {
+				const acl = this._computeObjectACL(vertex.dependencies);
+				if (!acl.query_isWriter(vertex.peerId)) {
 					throw new Error(`${vertex.peerId} does not have write permission.`);
 				}
 				if (
@@ -354,9 +355,7 @@ export class DRPObject implements ObjectPb.DRPObjectBase {
 
 	// check if the given peer has write permission
 	private _checkWriterPermission(peerId: string): boolean {
-		return this.acl
-			? (this.acl as ACL).permissionless || (this.acl as ACL).query_isWriter(peerId)
-			: true;
+		return this.acl ? (this.acl as ACL).query_isWriter(peerId) : true;
 	}
 
 	// apply the operation to the DRP
@@ -573,7 +572,12 @@ export class DRPObject implements ObjectPb.DRPObjectBase {
 	}
 }
 
-function computeHash(peerId: string, operation: Operation, deps: Hash[], timestamp: number): Hash {
+export function computeHash(
+	peerId: string,
+	operation: Operation,
+	deps: Hash[],
+	timestamp: number
+): Hash {
 	const serialized = JSON.stringify({ operation, deps, peerId, timestamp });
 	const hash = crypto.createHash("sha256").update(serialized).digest("hex");
 	return hash;
