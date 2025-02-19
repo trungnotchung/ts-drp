@@ -165,55 +165,51 @@ export class DRPObject implements DRPObjectBase {
 
 		const isACL = drpType === DrpType.ACL;
 		const vertexDependencies = this.hashGraph.getFrontier();
+		const vertexOperation = { drpType, opType: fn, value: args };
+		const preComputeLca = this.computeLCA(vertexDependencies);
+		const now = Date.now();
 		const preOperationDRP = isACL
 			? this._computeObjectACL(vertexDependencies)
 			: this._computeDRP(vertexDependencies);
 
-		const drp = cloneDeep(preOperationDRP);
+		const clonedDRP = cloneDeep(preOperationDRP);
 		let appliedOperationResult = undefined;
 		try {
-			appliedOperationResult = this._applyOperation(drp, {
-				opType: fn,
-				value: args,
-				drpType,
-			});
+			appliedOperationResult = this._applyOperation(clonedDRP, vertexOperation);
 		} catch (e) {
 			log.error(`::drpObject::callFn: ${e}`);
 			return appliedOperationResult;
 		}
 
 		const stateChanged = Object.keys(preOperationDRP).some(
-			(key) => !deepEqual(preOperationDRP[key], drp[key])
+			(key) => !deepEqual(preOperationDRP[key], clonedDRP[key])
 		);
 		if (!stateChanged) {
 			return appliedOperationResult;
 		}
 
-		const vertexTimestamp = Date.now();
-		const vertexOperation = { drpType: drpType, opType: fn, value: args };
+		const [drp, acl] = isACL
+			? [this._computeDRP(vertexDependencies, preComputeLca), clonedDRP as ACL]
+			: [clonedDRP as DRP, this._computeObjectACL(vertexDependencies, preComputeLca)];
+
 		const vertex = ObjectPb.Vertex.create({
-			hash: computeHash(this.peerId, vertexOperation, vertexDependencies, vertexTimestamp),
+			hash: computeHash(this.peerId, vertexOperation, vertexDependencies, now),
 			peerId: this.peerId,
 			operation: vertexOperation,
 			dependencies: vertexDependencies,
-			timestamp: vertexTimestamp,
+			timestamp: now,
 		});
 
 		this.hashGraph.addToFrontier(vertex);
-		if (drpType === DrpType.DRP) {
-			this._setObjectACLState(vertex, undefined);
-			this._setDRPState(vertex, undefined, this._getDRPState(drp));
-		} else {
-			this._setObjectACLState(vertex, undefined, this._getDRPState(drp));
-			this._setDRPState(vertex, undefined);
-		}
-		this._initializeFinalityState(vertex.hash);
+		this._setDRPState(vertex, preComputeLca, this._getDRPState(drp));
+		this._setObjectACLState(vertex, preComputeLca, this._getDRPState(acl));
+		this._initializeFinalityState(vertex.hash, acl);
 
 		this.vertices.push(vertex);
 		this._notify("callFn", [vertex]);
 
-		if (!isACL) Object.assign(this.drp as DRP, drp);
-		else Object.assign(this.acl as ObjectACL, drp);
+		if (!isACL) Object.assign(this.drp as DRP, clonedDRP);
+		else Object.assign(this.acl as ObjectACL, clonedDRP);
 
 		return appliedOperationResult;
 	}
@@ -280,18 +276,20 @@ export class DRPObject implements DRPObjectBase {
 			try {
 				this.validateVertex(vertex);
 				const preComputeLca = this.computeLCA(vertex.dependencies);
-
-				if (vertex.operation.drpType === DrpType.DRP) {
-					const drp = this._computeDRP(vertex.dependencies, preComputeLca, vertex.operation);
-					this._setObjectACLState(vertex, preComputeLca);
-					this._setDRPState(vertex, preComputeLca, this._getDRPState(drp));
-				} else {
-					const acl = this._computeObjectACL(vertex.dependencies, preComputeLca, vertex.operation);
-					this._setObjectACLState(vertex, preComputeLca, this._getDRPState(acl));
-					this._setDRPState(vertex, preComputeLca);
-				}
+				const drp = this._computeDRP(
+					vertex.dependencies,
+					preComputeLca,
+					vertex.operation.drpType === DrpType.DRP ? vertex.operation : undefined
+				);
+				const acl = this._computeObjectACL(
+					vertex.dependencies,
+					preComputeLca,
+					vertex.operation.drpType === DrpType.ACL ? vertex.operation : undefined
+				);
+				this._setDRPState(vertex, preComputeLca, this._getDRPState(drp));
+				this._setObjectACLState(vertex, preComputeLca, this._getDRPState(acl));
 				this.hashGraph.addVertex(vertex);
-				this._initializeFinalityState(vertex.hash);
+				this._initializeFinalityState(vertex.hash, acl);
 				newVertices.push(vertex);
 			} catch (_) {
 				missing.push(vertex.hash);
@@ -344,21 +342,8 @@ export class DRPObject implements DRPObjectBase {
 	}
 
 	// initialize the attestation store for the given vertex hash
-	private _initializeFinalityState(hash: Hash) {
-		if (!this.acl || !this.originalObjectACL) {
-			throw new Error("ObjectACL is undefined");
-		}
-		const fetchedState = this.aclStates.get(hash);
-		if (fetchedState !== undefined) {
-			const state = cloneDeep(fetchedState);
-			const acl = cloneDeep(this.originalObjectACL);
-
-			for (const entry of state.state) {
-				acl[entry.key] = entry.value;
-			}
-			// signer set equals writer set
-			this.finalityStore.initializeState(hash, acl.query_getFinalitySigners());
-		}
+	private _initializeFinalityState(hash: Hash, acl: ACL) {
+		this.finalityStore.initializeState(hash, acl.query_getFinalitySigners());
 	}
 
 	// check if the given peer has write permission
@@ -438,7 +423,7 @@ export class DRPObject implements DRPObjectBase {
 		vertexDependencies: Hash[],
 		preCompute?: LcaAndOperations,
 		vertexOperation?: Operation
-	): DRP {
+	): ACL {
 		if (!this.acl || !this.originalObjectACL) {
 			throw new Error("ObjectACL is undefined");
 		}
