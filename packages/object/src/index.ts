@@ -140,7 +140,9 @@ export class DRPObject implements DRPObjectBase {
 							if (callerName?.startsWith("DRPObject.resolveConflicts")) {
 								return Reflect.apply(applyTarget, thisArg, args);
 							}
-							if (!callerName?.startsWith("Proxy.")) obj.callFn(fullPropKey, args, vertexType);
+							if (!callerName?.startsWith("Proxy.")) {
+								return obj.callFn(fullPropKey, args, vertexType);
+							}
 							return Reflect.apply(applyTarget, thisArg, args);
 						},
 					});
@@ -160,36 +162,35 @@ export class DRPObject implements DRPObjectBase {
 		if (!this.hashGraph) {
 			throw new Error("Hashgraph is undefined");
 		}
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let preOperationDRP: any;
-		if (drpType === DrpType.ACL) {
-			preOperationDRP = this._computeObjectACL(this.hashGraph.getFrontier());
-		} else {
-			preOperationDRP = this._computeDRP(this.hashGraph.getFrontier());
-		}
+
+		const isACL = drpType === DrpType.ACL;
+		const vertexDependencies = this.hashGraph.getFrontier();
+		const preOperationDRP = isACL
+			? this._computeObjectACL(vertexDependencies)
+			: this._computeDRP(vertexDependencies);
+
 		const drp = cloneDeep(preOperationDRP);
+		let appliedOperationResult = undefined;
 		try {
-			this._applyOperation(drp, { opType: fn, value: args, drpType });
+			appliedOperationResult = this._applyOperation(drp, {
+				opType: fn,
+				value: args,
+				drpType,
+			});
 		} catch (e) {
 			log.error(`::drpObject::callFn: ${e}`);
-			return;
+			return appliedOperationResult;
 		}
 
-		let stateChanged = false;
-		for (const key of Object.keys(preOperationDRP)) {
-			if (!deepEqual(preOperationDRP[key], drp[key])) {
-				stateChanged = true;
-				break;
-			}
-		}
-
+		const stateChanged = Object.keys(preOperationDRP).some(
+			(key) => !deepEqual(preOperationDRP[key], drp[key])
+		);
 		if (!stateChanged) {
-			return;
+			return appliedOperationResult;
 		}
 
 		const vertexTimestamp = Date.now();
 		const vertexOperation = { drpType: drpType, opType: fn, value: args };
-		const vertexDependencies = this.hashGraph.getFrontier();
 		const vertex = ObjectPb.Vertex.create({
 			hash: computeHash(this.peerId, vertexOperation, vertexDependencies, vertexTimestamp),
 			peerId: this.peerId,
@@ -197,8 +198,8 @@ export class DRPObject implements DRPObjectBase {
 			dependencies: vertexDependencies,
 			timestamp: vertexTimestamp,
 		});
-		this.hashGraph.addToFrontier(vertex);
 
+		this.hashGraph.addToFrontier(vertex);
 		if (drpType === DrpType.DRP) {
 			this._setObjectACLState(vertex, undefined);
 			this._setDRPState(vertex, undefined, this._getDRPState(drp));
@@ -210,6 +211,11 @@ export class DRPObject implements DRPObjectBase {
 
 		this.vertices.push(vertex);
 		this._notify("callFn", [vertex]);
+
+		if (!isACL) Object.assign(this.drp as DRP, drp);
+		else Object.assign(this.acl as ObjectACL, drp);
+
+		return appliedOperationResult;
 	}
 
 	/* Merges the vertices into the hashgraph
@@ -385,7 +391,7 @@ export class DRPObject implements DRPObjectBase {
 		}
 
 		try {
-			target[methodName](...value);
+			return target[methodName](...value);
 		} catch (e) {
 			throw new Error(`Error while applying operation ${opType}: ${e}`);
 		}
