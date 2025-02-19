@@ -1,9 +1,10 @@
-import type { Vertex_Operation as Operation, Vertex } from "@ts-drp/types";
+import { type Vertex_Operation as Operation, Vertex } from "@ts-drp/types";
 
 import { log } from "../index.js";
 import { BitSet } from "./bitset.js";
 import { linearizeMultipleSemantics } from "../linearize/multipleSemantics.js";
 import { linearizePairSemantics } from "../linearize/pairSemantics.js";
+import { computeHash } from "../utils/computeHash.js";
 import { ObjectSet } from "../utils/objectSet.js";
 
 // Reexporting the Vertex and Operation types from the protobuf file
@@ -103,6 +104,16 @@ export class HashGraph {
 		return this.resolveConflictsDRP
 			? this.resolveConflictsDRP(vertices)
 			: { action: ActionType.Nop };
+	}
+
+	createVertex(operation: Operation, dependencies: Hash[], timestamp: number): Vertex {
+		return Vertex.create({
+			hash: computeHash(this.peerId, operation, dependencies, timestamp),
+			peerId: this.peerId,
+			timestamp,
+			operation,
+			dependencies,
+		});
 	}
 
 	addToFrontier(vertex: Vertex) {
