@@ -130,6 +130,9 @@ importers:
       '@ts-drp/object':
         specifier: 0.7.0
         version: link:../../packages/object
+      '@ts-drp/tracer':
+        specifier: ^0.7.0
+        version: link:../../packages/tracer
     devDependencies:
       '@types/node':
         specifier: ^22.5.4
@@ -305,6 +308,9 @@ importers:
       '@ts-drp/object':
         specifier: 0.7.0
         version: link:../object
+      '@ts-drp/tracer':
+        specifier: 0.7.0
+        version: link:../tracer
       '@ts-drp/types':
         specifier: 0.7.0
         version: link:../types
@@ -348,6 +354,9 @@ importers:
       '@ts-drp/logger':
         specifier: ^0.7.0
         version: link:../logger
+      '@ts-drp/tracer':
+        specifier: ^0.7.0
+        version: link:../tracer
       '@ts-drp/types':
         specifier: ^0.7.0
         version: link:../types
@@ -11657,7 +11666,7 @@ snapshots:
       ky: 1.7.5
       registry-auth-token: 5.1.0
       registry-url: 6.0.1
-      semver: 7.6.3
+      semver: 7.7.1
 
   pako@1.0.11: {}
 

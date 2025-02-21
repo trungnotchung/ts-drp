@@ -51,6 +51,7 @@
 		"@ts-drp/network": "0.7.0",
 		"@ts-drp/object": "0.7.0",
 		"@ts-drp/logger": "0.7.0",
+		"@ts-drp/tracer": "0.7.0",
 		"@ts-drp/types": "0.7.0",
 		"commander": "^13.0.0",
 		"uint8arrays": "^5.1.0"

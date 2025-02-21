@@ -1,4 +1,5 @@
 import { type DRP, DRPObject, HashGraph } from "@ts-drp/object";
+import { IMetrics } from "@ts-drp/tracer";
 import { FetchState, Message, MessageType, Sync } from "@ts-drp/types";
 
 import { drpMessagesHandler, drpObjectChangesHandler } from "./handlers.js";
@@ -6,33 +7,39 @@ import { type DRPNode, log } from "./index.js";
 
 export function createObject(node: DRPNode, object: DRPObject) {
 	node.objectStore.put(object.id, object);
-	object.subscribe((obj, originFn, vertices) =>
-		drpObjectChangesHandler(node, obj, originFn, vertices)
-	);
+	object.subscribe((obj, originFn, vertices) => {
+		drpObjectChangesHandler(node, obj, originFn, vertices);
+	});
 }
+
+export type ConnectObjectOptions = {
+	drp?: DRP;
+	peerId?: string;
+	metrics?: IMetrics;
+};
 
 export async function connectObject(
 	node: DRPNode,
 	id: string,
-	drp?: DRP,
-	peerId?: string
+	options: ConnectObjectOptions
 ): Promise<DRPObject> {
 	const object = DRPObject.createObject({
 		peerId: node.networkNode.peerId,
 		id,
-		drp,
+		drp: options.drp,
+		metrics: options.metrics,
 	});
 	node.objectStore.put(id, object);
 
-	await fetchState(node, id, peerId);
+	await fetchState(node, id, options.peerId);
 	// sync process needs to finish before subscribing
 	const retry = setInterval(async () => {
 		if (object.acl) {
-			await syncObject(node, id, peerId);
+			await syncObject(node, id, options.peerId);
 			await subscribeObject(node, id);
-			object.subscribe((obj, originFn, vertices) =>
-				drpObjectChangesHandler(node, obj, originFn, vertices)
-			);
+			object.subscribe((obj, originFn, vertices) => {
+				drpObjectChangesHandler(node, obj, originFn, vertices);
+			});
 			clearInterval(retry);
 		}
 	}, 1000);
