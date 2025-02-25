@@ -4,6 +4,7 @@ import { FetchState, Message, MessageType, Sync } from "@ts-drp/types";
 
 import { drpMessagesHandler, drpObjectChangesHandler } from "./handlers.js";
 import { type DRPNode, log } from "./index.js";
+import { GossipsubMessage } from "@chainsafe/libp2p-gossipsub";
 
 export function createObject(node: DRPNode, object: DRPObject) {
 	node.objectStore.put(object.id, object);
@@ -51,7 +52,8 @@ export async function subscribeObject(node: DRPNode, objectId: string) {
 	node.networkNode.subscribe(objectId);
 	node.networkNode.addGroupMessageHandler(
 		objectId,
-		async (e: any) => await drpMessagesHandler(node, undefined, e.detail.msg.data)
+		async (e: CustomEvent<GossipsubMessage>) =>
+			await drpMessagesHandler(node, undefined, e.detail.msg.data)
 	);
 }
 

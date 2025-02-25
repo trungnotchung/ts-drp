@@ -1,6 +1,6 @@
 {
   "name": "ts-drp-example-grid",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "license": "MIT",
   "scripts": {
     "build": "vite build",
@@ -9,10 +9,10 @@
     "start": "vite preview --host --port 5173"
   },
   "dependencies": {
-    "@ts-drp/node": "0.8.2",
-    "@ts-drp/object": "0.8.2",
-    "@ts-drp/tracer": "^0.8.2",
-    "@ts-drp/types": "^0.8.2"
+    "@ts-drp/node": "0.8.3",
+    "@ts-drp/object": "0.8.3",
+    "@ts-drp/tracer": "^0.8.3",
+    "@ts-drp/types": "^0.8.3"
   },
   "devDependencies": {
     "@types/node": "^22.5.4",
