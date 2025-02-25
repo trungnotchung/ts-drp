@@ -1,6 +1,6 @@
 {
  "name": "@ts-drp/blueprints",
- "version": "0.8.1",
+ "version": "0.8.2",
  "license": "MIT",
  "repository": {
   "type": "git",
@@ -28,10 +28,10 @@
   "watch": "tsc -b -w"
  },
  "devDependencies": {
-  "@ts-drp/object": "0.8.1"
+  "@ts-drp/object": "0.8.2"
  },
  "dependencies": {
   "@thi.ng/random": "^4.1.0",
-  "@ts-drp/types": "^0.8.1"
+  "@ts-drp/types": "^0.8.2"
  }
 }
