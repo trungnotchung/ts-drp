@@ -1,10 +1,10 @@
+import { GossipsubMessage } from "@chainsafe/libp2p-gossipsub";
 import { type DRP, DRPObject, HashGraph } from "@ts-drp/object";
 import { IMetrics } from "@ts-drp/tracer";
 import { FetchState, Message, MessageType, Sync } from "@ts-drp/types";
 
 import { drpMessagesHandler, drpObjectChangesHandler } from "./handlers.js";
 import { type DRPNode, log } from "./index.js";
-import { GossipsubMessage } from "@chainsafe/libp2p-gossipsub";
 
 export function createObject(node: DRPNode, object: DRPObject) {
 	node.objectStore.put(object.id, object);
