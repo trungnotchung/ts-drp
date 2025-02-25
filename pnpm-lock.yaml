@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.7.3
     devDependencies:
       '@playwright/test':
         specifier: ^1.49.1
@@ -62,9 +66,6 @@ importers:
       typedoc:
         specifier: ^0.26.6
         version: 0.26.11(typescript@5.7.3)
-      typescript:
-        specifier: ^5.5.4
-        version: 5.7.3
       typescript-eslint:
         specifier: ^8.21.0
         version: 8.24.1(eslint@9.21.0)(typescript@5.7.3)
@@ -341,9 +342,6 @@ importers:
       tsx:
         specifier: 4.19.1
         version: 4.19.1
-      typescript:
-        specifier: ^5.5.4
-        version: 5.7.3
       vitest:
         specifier: ^3.0.5
         version: 3.0.6(@types/node@22.13.5)(terser@5.39.0)(tsx@4.19.1)(yaml@2.7.0)
@@ -451,9 +449,6 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.21.0
-      typescript:
-        specifier: ^5.7.3
-        version: 5.7.3
       typescript-eslint:
         specifier: ^8.20.0
         version: 8.24.1(eslint@9.21.0)(typescript@5.7.3)
@@ -479,9 +474,6 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.21.0
-      typescript:
-        specifier: ^5.7.3
-        version: 5.7.3
       typescript-eslint:
         specifier: ^8.20.0
         version: 8.24.1(eslint@9.21.0)(typescript@5.7.3)
