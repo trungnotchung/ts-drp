@@ -51,7 +51,7 @@ export async function subscribeObject(node: DRPNode, objectId: string) {
 	node.networkNode.subscribe(objectId);
 	node.networkNode.addGroupMessageHandler(
 		objectId,
-		async (e) => await drpMessagesHandler(node, undefined, e.detail.msg.data)
+		async (e: any) => await drpMessagesHandler(node, undefined, e.detail.msg.data)
 	);
 }
 
