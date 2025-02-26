@@ -1,3 +1,4 @@
+import { LoggerOptions } from "@ts-drp/logger";
 import { IMetrics } from "@ts-drp/tracer";
 import { Operation, Vertex } from "@ts-drp/types";
 
@@ -32,4 +33,5 @@ export type ConnectObjectOptions = {
 	id?: string;
 	drp?: DRP;
 	metrics?: IMetrics;
+	log_config?: LoggerOptions;
 };
