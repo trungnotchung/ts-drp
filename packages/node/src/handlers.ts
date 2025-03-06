@@ -3,11 +3,8 @@ import type { Stream } from "@libp2p/interface";
 import { peerIdFromPublicKey } from "@libp2p/peer-id";
 import { Signature } from "@noble/secp256k1";
 import { streamToUint8Array } from "@ts-drp/network";
-import { type ACL, type DRPObject, HashGraph } from "@ts-drp/object";
+import { HashGraph } from "@ts-drp/object";
 import {
-	type Vertex,
-	type AggregatedAttestation,
-	type Attestation,
 	AttestationUpdate,
 	type DRPState,
 	FetchState,
@@ -17,7 +14,13 @@ import {
 	Sync,
 	SyncAccept,
 	Update,
+	type IDRPObject,
+	type IACL,
+	type Vertex,
+	type AggregatedAttestation,
+	type Attestation,
 } from "@ts-drp/types";
+import { isPromise } from "@ts-drp/utils";
 import * as crypto from "crypto";
 
 import { type DRPNode } from "./index.js";
@@ -78,7 +81,7 @@ export async function drpMessagesHandler(
 		return;
 	}
 	const result = handler({ node, message, stream });
-	if (result instanceof Promise) {
+	if (isPromise(result)) {
 		await result;
 	}
 }
@@ -134,7 +137,7 @@ function fetchStateResponseHandler({ node, message }: HandleParams): ReturnType<
 		object.aclStates.set(fetchStateResponse.vertexHash, state);
 		for (const e of state.state) {
 			if (object.originalObjectACL) object.originalObjectACL[e.key] = e.value;
-			(object.acl as ACL)[e.key] = e.value;
+			(object.acl as IACL)[e.key] = e.value;
 		}
 		node.objectStore.put(object.id, object);
 		return;
@@ -157,7 +160,7 @@ function attestationUpdateHandler({ node, message }: HandleParams): ReturnType<I
 		return;
 	}
 
-	if ((object.acl as ACL).query_isFinalitySigner(sender)) {
+	if ((object.acl as IACL).query_isFinalitySigner(sender)) {
 		object.finalityStore.addSignatures(sender, attestationUpdate.attestations);
 	}
 }
@@ -177,7 +180,7 @@ async function updateHandler({ node, message }: HandleParams): Promise<void> {
 	}
 
 	let verifiedVertices: Vertex[] = [];
-	if ((object.acl as ACL).permissionless) {
+	if ((object.acl as IACL).permissionless) {
 		verifiedVertices = updateMessage.vertices;
 	} else {
 		verifiedVertices = await verifyACLIncomingVertices(updateMessage.vertices);
@@ -288,7 +291,7 @@ async function syncAcceptHandler({ node, message, stream }: HandleParams): Promi
 	}
 
 	let verifiedVertices: Vertex[] = [];
-	if ((object.acl as ACL).permissionless) {
+	if ((object.acl as IACL).permissionless) {
 		verifiedVertices = syncAcceptMessage.requested;
 	} else {
 		verifiedVertices = await verifyACLIncomingVertices(syncAcceptMessage.requested);
@@ -343,7 +346,7 @@ function syncRejectHandler(_handleParams: HandleParams): ReturnType<IHandlerStra
 
 export function drpObjectChangesHandler(
 	node: DRPNode,
-	obj: DRPObject,
+	obj: IDRPObject,
 	originFn: string,
 	vertices: Vertex[]
 ): void {
@@ -401,10 +404,10 @@ export async function signGeneratedVertices(node: DRPNode, vertices: Vertex[]): 
 // Signs the vertices. Returns the attestations
 export function signFinalityVertices(
 	node: DRPNode,
-	obj: DRPObject,
+	obj: IDRPObject,
 	vertices: Vertex[]
 ): Attestation[] {
-	if (!(obj.acl as ACL).query_isFinalitySigner(node.networkNode.peerId)) {
+	if (!(obj.acl as IACL).query_isFinalitySigner(node.networkNode.peerId)) {
 		return [];
 	}
 	const attestations = generateAttestations(node, obj, vertices);
@@ -412,7 +415,11 @@ export function signFinalityVertices(
 	return attestations;
 }
 
-function generateAttestations(node: DRPNode, object: DRPObject, vertices: Vertex[]): Attestation[] {
+function generateAttestations(
+	node: DRPNode,
+	object: IDRPObject,
+	vertices: Vertex[]
+): Attestation[] {
 	// Two condition:
 	// - The node can sign the vertex
 	// - The node hasn't signed for the vertex
@@ -427,7 +434,7 @@ function generateAttestations(node: DRPNode, object: DRPObject, vertices: Vertex
 	}));
 }
 
-function getAttestations(object: DRPObject, vertices: Vertex[]): AggregatedAttestation[] {
+function getAttestations(object: IDRPObject, vertices: Vertex[]): AggregatedAttestation[] {
 	return (
 		vertices
 			.map((v) => object.finalityStore.getAttestation(v.hash))
