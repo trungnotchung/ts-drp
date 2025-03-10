@@ -11,6 +11,9 @@ importers:
       '@types/node':
         specifier: ^22.5.4
         version: 22.13.9
+      tsx:
+        specifier: 4.19.1
+        version: 4.19.1
       typescript:
         specifier: ^5.7.3
         version: 5.8.2
@@ -69,9 +72,6 @@ importers:
       ts-proto:
         specifier: ^2.2.4
         version: 2.6.1
-      tsx:
-        specifier: 4.19.1
-        version: 4.19.1
       typedoc:
         specifier: ^0.26.6
         version: 0.26.11(typescript@5.8.2)
