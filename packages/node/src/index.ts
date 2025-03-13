@@ -60,7 +60,8 @@ export class DRPNode {
 		);
 		this.networkNode.addGroupMessageHandler(
 			DRP_DISCOVERY_TOPIC,
-			(e) => void drpMessagesHandler(this, undefined, e.detail.msg.data)
+			(e: CustomEvent<GossipsubMessage>) =>
+				void drpMessagesHandler(this, undefined, e.detail.msg.data)
 		);
 		this._intervals.forEach((interval) => interval.start());
 	}
