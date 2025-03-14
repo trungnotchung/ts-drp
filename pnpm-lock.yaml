@@ -585,7 +585,11 @@ importers:
         specifier: ^1.13.0
         version: 1.13.0
 
-  packages/utils: {}
+  packages/utils:
+    dependencies:
+      '@ts-drp/types':
+        specifier: ^0.9.1
+        version: link:../types
 
 packages:
 
