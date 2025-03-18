@@ -9,6 +9,7 @@ import {
 	DRP_DISCOVERY_TOPIC,
 	DRPDiscoveryResponse,
 	type DRPNodeConfig,
+	type IDRP,
 	type IDRPObject,
 	type IntervalRunnerMap,
 	Message,
@@ -118,8 +119,8 @@ export class DRPNode {
 		await this.networkNode.sendMessage(peerId, message);
 	}
 
-	async createObject(options: NodeCreateObjectOptions): Promise<DRPObject> {
-		const object = new DRPObject({
+	async createObject<T extends IDRP>(options: NodeCreateObjectOptions<T>): Promise<DRPObject<T>> {
+		const object = new DRPObject<T>({
 			peerId: this.networkNode.peerId,
 			acl: options.acl,
 			drp: options.drp,
@@ -144,8 +145,14 @@ export class DRPNode {
 	 * @param options.drp - The DRP instance. It can be undefined where we just want the HG state
 	 * @param options.sync.peerId - The peer ID to sync with
 	 */
-	async connectObject(options: NodeConnectObjectOptions): Promise<IDRPObject> {
-		const object = await operations.connectObject(this, options.id, options);
+	async connectObject<T extends IDRP>(
+		options: NodeConnectObjectOptions<T>
+	): Promise<IDRPObject<T>> {
+		const object = await operations.connectObject(this, options.id, {
+			peerId: options.sync?.peerId,
+			drp: options.drp,
+			metrics: options.metrics,
+		});
 		this._createIntervalDiscovery(options.id);
 		return object;
 	}
