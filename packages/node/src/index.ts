@@ -1,6 +1,7 @@
 import type { GossipsubMessage } from "@chainsafe/libp2p-gossipsub";
 import type { EventCallback, IncomingStreamData, StreamHandler } from "@libp2p/interface";
 import { createDRPDiscovery } from "@ts-drp/interval-discovery";
+import { createDRPReconnectBootstrap } from "@ts-drp/interval-reconnect";
 import { Keychain } from "@ts-drp/keychain";
 import { Logger } from "@ts-drp/logger";
 import { DRPNetworkNode } from "@ts-drp/network";
@@ -55,6 +56,14 @@ export class DRPNode {
 	async start(): Promise<void> {
 		await this.keychain.start();
 		await this.networkNode.start(this.keychain.secp256k1PrivateKey);
+		this._intervals.set(
+			"interval::reconnect",
+			createDRPReconnectBootstrap({
+				...this.config.interval_reconnect_options,
+				id: this.networkNode.peerId.toString(),
+				networkNode: this.networkNode,
+			})
+		);
 		await this.networkNode.addMessageHandler(
 			({ stream }: IncomingStreamData) => void drpMessagesHandler(this, stream)
 		);
@@ -67,8 +76,8 @@ export class DRPNode {
 	}
 
 	async stop(): Promise<void> {
-		await this.networkNode.stop();
 		this._intervals.forEach((interval) => interval.stop());
+		await this.networkNode.stop();
 	}
 
 	async restart(config?: DRPNodeConfig): Promise<void> {
