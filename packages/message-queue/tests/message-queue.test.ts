@@ -34,11 +34,10 @@ describe("MessageQueue", () => {
 			}
 
 			let i = 0;
-			const handler = vi.fn(async (msg: string) => {
+			const handler = vi.fn((msg: string) => {
 				messages.push(msg);
 				resolvers[i]();
 				i++;
-				return Promise.resolve();
 			});
 			// Start subscription before enqueueing
 			queue.subscribe(handler);
@@ -73,10 +72,9 @@ describe("MessageQueue", () => {
 				resolveHandler = resolve;
 			});
 
-			const handler = vi.fn(async (msg: string) => {
+			const handler = vi.fn((msg: string) => {
 				messages.push(msg);
 				resolveHandler();
-				return Promise.resolve();
 			});
 
 			queue.subscribe(handler);
@@ -109,16 +107,14 @@ describe("MessageQueue", () => {
 				resolveHandler2 = resolve;
 			});
 
-			const handler1 = vi.fn(async (msg: string) => {
+			const handler1 = vi.fn((msg: string) => {
 				messages.push(msg);
 				resolveHandler1();
-				return Promise.resolve();
 			});
 
-			const handler2 = vi.fn(async (msg: string) => {
+			const handler2 = vi.fn((msg: string) => {
 				messages.push(msg);
 				resolveHandler2();
-				return Promise.resolve();
 			});
 
 			queue.subscribe(handler1);
@@ -130,6 +126,47 @@ describe("MessageQueue", () => {
 			queue.close();
 
 			expect(messages).toEqual(["test", "test"]);
+			expect(handler1).toHaveBeenCalledTimes(1);
+			expect(handler2).toHaveBeenCalledTimes(1);
+		});
+
+		it("should process messages in order multiple async handlers", async () => {
+			const messages: string[] = [];
+			let resolveHandler1: () => void;
+			let resolveHandler2: () => void;
+			const handler1Promise = new Promise<void>((resolve) => {
+				resolveHandler1 = resolve;
+			});
+			const handler2Promise = new Promise<void>((resolve) => {
+				resolveHandler2 = resolve;
+			});
+
+			const order: string[] = [];
+
+			const handler1 = vi.fn(async (msg: string) => {
+				messages.push(msg);
+				order.push("handler1");
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				resolveHandler1();
+			});
+
+			const handler2 = vi.fn(async (msg: string) => {
+				messages.push(msg);
+				order.push("handler2");
+				await new Promise((resolve) => setTimeout(resolve, 10));
+				resolveHandler2();
+			});
+
+			queue.subscribe(handler1);
+			queue.subscribe(handler2);
+
+			await queue.enqueue("test");
+			// Wait for both handlers to process the message
+			await Promise.all([handler1Promise, handler2Promise]);
+			queue.close();
+
+			expect(messages).toEqual(["test", "test"]);
+			expect(order).toEqual(["handler1", "handler2"]);
 			expect(handler1).toHaveBeenCalledTimes(1);
 			expect(handler2).toHaveBeenCalledTimes(1);
 		});
