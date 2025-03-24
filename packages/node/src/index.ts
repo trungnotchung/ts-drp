@@ -17,13 +17,10 @@ import {
 	type NodeCreateObjectOptions,
 } from "@ts-drp/types";
 
-import { loadConfig } from "./config.js";
 import { drpObjectChangesHandler, handleMessage } from "./handlers.js";
 import { log } from "./logger.js";
 import * as operations from "./operations.js";
 import { DRPObjectStore } from "./store/index.js";
-
-export { loadConfig };
 
 const DISCOVERY_MESSAGE_TYPES = [
 	MessageType.MESSAGE_TYPE_DRP_DISCOVERY,

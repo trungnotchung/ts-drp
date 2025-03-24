@@ -1,5 +1,6 @@
 import { publicKeyFromRaw } from "@libp2p/crypto/keys";
 import { peerIdFromPublicKey } from "@libp2p/peer-id";
+import { sha256 } from "@noble/hashes/sha2";
 import { Signature } from "@noble/secp256k1";
 import { DRPIntervalDiscovery } from "@ts-drp/interval-discovery";
 import { deserializeDRPState, HashGraph, serializeDRPState } from "@ts-drp/object";
@@ -20,7 +21,6 @@ import {
 } from "@ts-drp/types";
 import { isPromise } from "@ts-drp/utils";
 import { type Deferred } from "@ts-drp/utils/promise/deferred";
-import * as crypto from "crypto";
 
 import { type DRPNode } from "./index.js";
 import { log } from "./logger.js";
@@ -462,7 +462,7 @@ export function verifyACLIncomingVertices(incomingVertices: Vertex[]): Vertex[] 
 			}
 
 			try {
-				const hashData = crypto.createHash("sha256").update(vertex.hash).digest("hex");
+				const hashData = sha256.create().update(vertex.hash).digest();
 				const recovery = vertex.signature[0];
 				const compactSignature = vertex.signature.slice(1);
 				const signatureWithRecovery = Signature.fromCompact(compactSignature).addRecoveryBit(recovery);
