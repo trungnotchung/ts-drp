@@ -3,7 +3,7 @@ import { peerIdFromPublicKey } from "@libp2p/peer-id";
 import { sha256 } from "@noble/hashes/sha2";
 import { Signature } from "@noble/secp256k1";
 import { DRPIntervalDiscovery } from "@ts-drp/interval-discovery";
-import { deserializeDRPState, HashGraph, serializeDRPState } from "@ts-drp/object";
+import { HashGraph } from "@ts-drp/object";
 import {
 	type AggregatedAttestation,
 	type Attestation,
@@ -21,6 +21,7 @@ import {
 } from "@ts-drp/types";
 import { isPromise } from "@ts-drp/utils";
 import { type Deferred } from "@ts-drp/utils/promise/deferred";
+import { deserializeDRPState, serializeDRPState } from "@ts-drp/utils/serialization";
 
 import { type DRPNode } from "./index.js";
 import { log } from "./logger.js";
